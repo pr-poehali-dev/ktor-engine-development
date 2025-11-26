@@ -17,31 +17,43 @@ const CTORBoard = ({ board, onCellClick, selectedPiece, validMoves = [], current
     return validMoves.some(pos => pos.row === row && pos.col === col);
   };
 
-  const getBorderColor = (row: number, col: number) => {
-    const isTopEdge = row === 0;
-    const isBottomEdge = row === 9;
-    const isLeftEdge = col === 0;
-    const isRightEdge = col === 9;
+  const getCellColor = (row: number, col: number) => {
+    // Верхний ряд (row 0)
+    if (row === 0) {
+      if (col === 0) return 'bg-blue-200/50';
+      if (col === 1) return 'bg-blue-400/60';
+      if (col >= 2 && col <= 5) return 'bg-blue-600/70';
+      if (col >= 6 && col <= 7) return 'bg-blue-500/70';
+      if (col === 8) return 'bg-blue-300/50';
+      if (col === 9) return 'bg-blue-200/50';
+    }
     
-    const isTopLeftCorner = isTopEdge && isLeftEdge;
-    const isTopRightCorner = isTopEdge && isRightEdge;
-    const isBottomLeftCorner = isBottomEdge && isLeftEdge;
-    const isBottomRightCorner = isBottomEdge && isRightEdge;
+    // Нижний ряд (row 9)
+    if (row === 9) {
+      if (col === 0) return 'bg-pink-200/50';
+      if (col === 1) return 'bg-pink-300/50';
+      if (col >= 2 && col <= 5) return 'bg-yellow-200/50';
+      if (col >= 6 && col <= 7) return 'bg-cyan-200/50';
+      if (col === 8) return 'bg-pink-200/50';
+      if (col === 9) return 'bg-blue-200/50';
+    }
     
-    if (isTopLeftCorner || isBottomRightCorner) return 'bg-cyan-200/40';
-    if (isTopRightCorner || isBottomLeftCorner) return 'bg-pink-200/40';
+    // Левая колонка (col 0)
+    if (col === 0) {
+      if (row === 1) return 'bg-green-300/50';
+      if (row >= 2 && row <= 7) return 'bg-orange-300/50';
+      if (row === 8) return 'bg-pink-300/50';
+    }
     
-    if ((isTopEdge && col >= 1 && col <= 2) || (isBottomEdge && col >= 7 && col <= 8)) return 'bg-blue-300/40';
-    if ((isTopEdge && col >= 7 && col <= 8) || (isBottomEdge && col >= 1 && col <= 2)) return 'bg-blue-200/40';
+    // Правая колонка (col 9)
+    if (col === 9) {
+      if (row === 1) return 'bg-green-300/50';
+      if (row >= 2 && row <= 7) return 'bg-red-400/60';
+      if (row === 8) return 'bg-green-300/50';
+    }
     
-    if ((isTopEdge && col >= 3 && col <= 6) || (isBottomEdge && col >= 3 && col <= 6)) return 'bg-yellow-200/40';
-    
-    if ((isLeftEdge && row >= 1 && row <= 6) || (isRightEdge && row >= 1 && row <= 6)) return 'bg-orange-300/50';
-    if ((isLeftEdge && row >= 7 && row <= 8) || (isRightEdge && row >= 7 && row <= 8)) return 'bg-pink-300/40';
-    
-    if (isLeftEdge || isRightEdge) return 'bg-green-200/40';
-    
-    return '';
+    // Внутренние клетки
+    return 'bg-gray-50';
   };
 
   return (
@@ -55,8 +67,8 @@ const CTORBoard = ({ board, onCellClick, selectedPiece, validMoves = [], current
               className={`
                 w-12 h-12 border border-gray-700/30 relative
                 transition-all duration-200
-                ${getBorderColor(rowIndex, colIndex)}
-                ${cell === null ? 'hover:bg-green-100/20' : ''}
+                ${getCellColor(rowIndex, colIndex)}
+                ${cell === null ? 'hover:brightness-95' : ''}
                 ${isSelected(rowIndex, colIndex) ? 'ring-4 ring-accent ring-offset-2 scale-105' : ''}
                 ${isValidMove(rowIndex, colIndex) ? 'ring-2 ring-green-400' : ''}
               `}
