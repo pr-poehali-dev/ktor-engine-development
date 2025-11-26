@@ -64,12 +64,6 @@ export const canMovePiece = (board: Player[][], from: Position, to: Position, pl
   if (board[normFrom.row][normFrom.col] !== player) return false;
   if (board[normTo.row][normTo.col] !== null) return false;
   
-  const isIsolated = getNeighbors(from).every(n => {
-    const nn = normalizePosition(n);
-    return board[nn.row][nn.col] !== player;
-  });
-  if (!isIsolated) return false;
-  
   const rowDiff = Math.abs(from.row - to.row);
   const colDiff = Math.abs(from.col - to.col);
   
@@ -209,11 +203,12 @@ export const selectPiece = (state: GameState, pos: Position): GameState => {
     return state;
   }
   
-  const isIsolated = getNeighbors(pos).every(n => {
+  const hasValidMove = getNeighbors(pos).some(n => {
     const nn = normalizePosition(n);
-    return state.board[nn.row][nn.col] !== state.currentPlayer;
+    return state.board[nn.row][nn.col] === null;
   });
-  if (!isIsolated) {
+  
+  if (!hasValidMove) {
     return state;
   }
   

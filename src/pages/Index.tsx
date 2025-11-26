@@ -278,7 +278,7 @@ const Index = () => {
                       </li>
                       <li className="flex gap-2">
                         <Icon name="Move" size={20} className="text-accent" />
-                        <span><strong>Переместить фишку</strong> — переместить свою одиночную фишку (без соседей своего цвета) на одну клетку по вертикали или горизонтали</span>
+                        <span><strong>Переместить фишку</strong> — переместить свою фишку на одну пустую клетку по вертикали или горизонтали (если рядом есть свободное место)</span>
                       </li>
                     </ul>
                     <div className="bg-muted/50 p-4 rounded-lg mt-3">
@@ -404,7 +404,7 @@ const Index = () => {
                           <p className="font-semibold mb-1">Защищайте свои фишки</p>
                           <p className="text-sm text-muted-foreground">
                             Следите, чтобы ваши фишки не оказывались в окружении 5-8 фишек противника.
-                            Используйте перемещения, чтобы вывести одиночные фишки из опасных зон.
+                            Используйте перемещения, чтобы вывести фишки из опасных зон.
                           </p>
                         </div>
                       </div>
@@ -414,8 +414,8 @@ const Index = () => {
                         <div>
                           <p className="font-semibold mb-1">Используйте перемещения</p>
                           <p className="text-sm text-muted-foreground">
-                            Одиночные фишки можно перемещать для создания ловушек или спасения от захвата.
-                            Это тактическое преимущество CTOR перед классическими играми.
+                            Любую фишку можно переместить на 1 клетку, если рядом есть свободное место.
+                            Это позволяет создавать ловушки или спасаться от захвата.
                           </p>
                         </div>
                       </div>
@@ -423,10 +423,10 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Контролируйте центр</p>
+                          <p className="font-semibold mb-1">Используйте тороидальность</p>
                           <p className="text-sm text-muted-foreground">
-                            Фишки в центре доски имеют полную область 3×3 для захвата противника.
-                            Угловые и крайние фишки менее эффективны для захвата.
+                            Благодаря тору все позиции равноценны — нет углов и краёв.
+                            Захваты работают через границы, что открывает уникальные тактики.
                           </p>
                         </div>
                       </div>
@@ -434,10 +434,10 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Планируйте на 2 хода вперёд</p>
+                          <p className="font-semibold mb-1">Планируйте на 2 действия</p>
                           <p className="text-sm text-muted-foreground">
                             У вас есть 2 действия за ход — используйте их комбинированно.
-                            Например: поставьте фишку для атаки, затем переместите одиночную для защиты.
+                            Например: поставьте фишку для атаки, затем переместите другую для защиты.
                           </p>
                         </div>
                       </div>
