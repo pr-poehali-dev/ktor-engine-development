@@ -24,7 +24,7 @@ export interface GameState {
   whiteCount: number;
 }
 
-const BOARD_SIZE = 10;
+const BOARD_SIZE = 11;
 
 export const createEmptyBoard = (): Player[][] => {
   return Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));

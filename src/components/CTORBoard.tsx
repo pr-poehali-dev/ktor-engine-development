@@ -20,36 +20,58 @@ const CTORBoard = ({ board, onCellClick, selectedPiece, validMoves = [], current
   const getCellColor = (row: number, col: number) => {
     // Верхний ряд (row 0)
     if (row === 0) {
-      if (col === 0) return 'bg-blue-200/50';
-      if (col === 1) return 'bg-blue-400/60';
-      if (col >= 2 && col <= 5) return 'bg-blue-600/70';
-      if (col >= 6 && col <= 7) return 'bg-blue-500/70';
+      if (col === 0) return 'bg-cyan-200/50';
+      if (col === 1) return 'bg-pink-200/50';
+      if (col >= 2 && col <= 5) return 'bg-yellow-200/50';
+      if (col >= 6 && col <= 9) return 'bg-yellow-200/50';
+      if (col === 10) return 'bg-cyan-200/50';
+    }
+    
+    // Второй ряд (row 1)
+    if (row === 1) {
+      if (col === 0) return 'bg-pink-200/50';
+      if (col === 1) return 'bg-blue-200/50';
+      if (col === 2) return 'bg-blue-600/70';
+      if (col >= 3 && col <= 7) return 'bg-blue-600/70';
       if (col === 8) return 'bg-blue-300/50';
       if (col === 9) return 'bg-blue-200/50';
+      if (col === 10) return 'bg-pink-200/50';
     }
     
-    // Нижний ряд (row 9)
+    // Ряды 2-7: боковые границы
+    if (row >= 2 && row <= 7) {
+      if (col === 0) return 'bg-orange-300/50';
+      if (col === 1) return 'bg-green-300/50';
+      if (col === 9) return 'bg-red-400/60';
+      if (col === 10) return 'bg-green-300/50';
+    }
+    
+    // Ряд 8
+    if (row === 8) {
+      if (col === 0) return 'bg-pink-300/50';
+      if (col === 1) return 'bg-green-300/50';
+      if (col === 9) return 'bg-red-400/60';
+      if (col === 10) return 'bg-green-300/50';
+    }
+    
+    // Ряд 9
     if (row === 9) {
-      if (col === 0) return 'bg-pink-200/50';
+      if (col === 0) return 'bg-cyan-200/50';
       if (col === 1) return 'bg-pink-300/50';
       if (col >= 2 && col <= 5) return 'bg-yellow-200/50';
-      if (col >= 6 && col <= 7) return 'bg-cyan-200/50';
-      if (col === 8) return 'bg-pink-200/50';
-      if (col === 9) return 'bg-blue-200/50';
+      if (col >= 6 && col <= 8) return 'bg-yellow-200/50';
+      if (col === 9) return 'bg-cyan-200/50';
+      if (col === 10) return 'bg-pink-200/50';
     }
     
-    // Левая колонка (col 0)
-    if (col === 0) {
-      if (row === 1) return 'bg-green-300/50';
-      if (row >= 2 && row <= 7) return 'bg-orange-300/50';
-      if (row === 8) return 'bg-pink-300/50';
-    }
-    
-    // Правая колонка (col 9)
-    if (col === 9) {
-      if (row === 1) return 'bg-green-300/50';
-      if (row >= 2 && row <= 7) return 'bg-red-400/60';
-      if (row === 8) return 'bg-green-300/50';
+    // Ряд 10 (нижний)
+    if (row === 10) {
+      if (col === 0) return 'bg-pink-200/50';
+      if (col === 1) return 'bg-blue-200/50';
+      if (col >= 2 && col <= 5) return 'bg-blue-400/50';
+      if (col >= 6 && col <= 8) return 'bg-blue-400/50';
+      if (col === 9) return 'bg-pink-200/50';
+      if (col === 10) return 'bg-blue-200/50';
     }
     
     // Внутренние клетки
@@ -58,7 +80,7 @@ const CTORBoard = ({ board, onCellClick, selectedPiece, validMoves = [], current
 
   return (
     <div className="inline-block p-6 rounded-lg shadow-2xl" style={{ backgroundColor: 'hsl(var(--board))' }}>
-      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(10, 1fr)` }}>
+      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(11, 1fr)` }}>
         {board.map((row, rowIndex) =>
           row.map((cell, colIndex) => (
             <button
