@@ -4,16 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import GameBoard from '@/components/GameBoard';
-import GameControls from '@/components/GameControls';
+import CTORBoard from '@/components/CTORBoard';
+import CTORControls from '@/components/CTORControls';
 import {
   initGame,
-  makeMove,
-  endGame,
+  placePiece,
+  movePiece,
+  selectPiece,
+  deselectPiece,
   getBestMove,
+  getValidMoves,
+  endTurn,
   GameState,
   Position,
-} from '@/lib/ktor-game';
+} from '@/lib/ctor-game';
 
 const Index = () => {
   const [gameState, setGameState] = useState<GameState>(initGame());
@@ -23,24 +27,24 @@ const Index = () => {
 
   const tutorialSteps = [
     {
-      title: 'Добро пожаловать в КТОР!',
-      description: 'КТОР — это упрощённая версия игры Го на доске 9×9.',
-      highlightedMoves: [],
+      title: 'Добро пожаловать в CTOR!',
+      description: 'CTOR — стратегическая игра на доске 10×10, где цель — захватить больше клеток, чем противник.',
     },
     {
-      title: 'Цель игры',
-      description: 'Захватывайте территорию и камни противника. Побеждает тот, у кого больше очков.',
-      highlightedMoves: [],
+      title: 'Размещение фишек',
+      description: 'За один ход вы можете поставить до 2 фишек на пустые клетки. Просто кликните на свободное место.',
     },
     {
-      title: 'Как ходить',
-      description: 'Нажмите на любую свободную клетку, чтобы поставить камень. Попробуйте сделать ход здесь:',
-      highlightedMoves: [{ row: 4, col: 4 }],
+      title: 'Перемещение фишек',
+      description: 'Вы можете переместить одиночную фишку (без соседей) на 1 клетку по вертикали или горизонтали. Кликните на свою одиночную фишку, затем на соседнюю пустую клетку.',
     },
     {
-      title: 'Захват камней',
-      description: 'Окружите камни противника со всех 4 сторон, чтобы захватить их и получить очки.',
-      highlightedMoves: [],
+      title: 'Захват фишек',
+      description: 'Если фишка противника окружена 5-8 вашими фишками в области 3×3, она переворачивается и становится вашей!',
+    },
+    {
+      title: 'Победа',
+      description: 'Игра заканчивается, когда доска заполнена. Побеждает тот, у кого больше фишек на доске.',
     },
   ];
 
@@ -49,27 +53,46 @@ const Index = () => {
       vsComputer &&
       !gameState.gameOver &&
       gameState.currentPlayer === 'white' &&
-      !tutorialMode
+      !tutorialMode &&
+      gameState.actionsRemaining > 0
     ) {
       const timer = setTimeout(() => {
-        const aiMove = getBestMove(gameState.board, 'white');
-        if (aiMove) {
-          handleMove(aiMove);
+        const aiAction = getBestMove(gameState);
+        if (aiAction) {
+          if (aiAction.type === 'place') {
+            setGameState(placePiece(gameState, aiAction.to));
+          } else if (aiAction.type === 'move' && aiAction.from) {
+            setGameState(movePiece(gameState, aiAction.from, aiAction.to));
+          }
         }
-      }, 500);
+      }, 600);
       return () => clearTimeout(timer);
     }
   }, [gameState, vsComputer, tutorialMode]);
 
-  const handleMove = (pos: Position) => {
-    if (tutorialMode && tutorialStep === 2) {
-      if (pos.row === 4 && pos.col === 4) {
-        setTutorialStep(3);
+  const handleCellClick = (pos: Position) => {
+    if (gameState.gameOver || (vsComputer && gameState.currentPlayer === 'white')) {
+      return;
+    }
+
+    if (gameState.selectedPiece) {
+      const validMoves = getValidMoves(gameState.board, gameState.selectedPiece, gameState.currentPlayer);
+      const isValidMove = validMoves.some(m => m.row === pos.row && m.col === pos.col);
+      
+      if (isValidMove) {
+        setGameState(movePiece(gameState, gameState.selectedPiece, pos));
+      } else if (gameState.board[pos.row][pos.col] === gameState.currentPlayer) {
+        setGameState(selectPiece(gameState, pos));
+      } else {
+        setGameState(deselectPiece(gameState));
+      }
+    } else {
+      if (gameState.board[pos.row][pos.col] === null) {
+        setGameState(placePiece(gameState, pos));
+      } else if (gameState.board[pos.row][pos.col] === gameState.currentPlayer) {
+        setGameState(selectPiece(gameState, pos));
       }
     }
-    
-    const newState = makeMove(gameState, pos);
-    setGameState(newState);
   };
 
   const handleNewGame = () => {
@@ -78,8 +101,8 @@ const Index = () => {
     setTutorialStep(0);
   };
 
-  const handleEndGame = () => {
-    setGameState(endGame(gameState));
+  const handleEndTurn = () => {
+    setGameState(endTurn(gameState));
   };
 
   const startTutorial = () => {
@@ -97,13 +120,17 @@ const Index = () => {
     }
   };
 
+  const validMoves = gameState.selectedPiece 
+    ? getValidMoves(gameState.board, gameState.selectedPiece, gameState.currentPlayer)
+    : [];
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-8 animate-fade-in">
-          <h1 className="text-5xl md:text-6xl font-bold mb-3 text-primary">КТОР</h1>
+          <h1 className="text-5xl md:text-6xl font-bold mb-3 text-primary">CTOR</h1>
           <p className="text-lg text-muted-foreground">
-            Стратегическая игра в стиле Го
+            Стратегическая игра захвата территории
           </p>
         </header>
 
@@ -149,11 +176,12 @@ const Index = () => {
                   </Button>
                 </div>
 
-                <GameBoard
+                <CTORBoard
                   board={gameState.board}
-                  onCellClick={handleMove}
-                  tutorialMode={tutorialMode}
-                  highlightedMoves={tutorialMode ? tutorialSteps[tutorialStep].highlightedMoves : []}
+                  onCellClick={handleCellClick}
+                  selectedPiece={gameState.selectedPiece}
+                  validMoves={validMoves}
+                  currentPlayer={gameState.currentPlayer}
                 />
 
                 {tutorialMode && (
@@ -175,14 +203,16 @@ const Index = () => {
                 )}
               </div>
 
-              <GameControls
+              <CTORControls
                 currentPlayer={gameState.currentPlayer}
-                blackScore={gameState.blackScore}
-                whiteScore={gameState.whiteScore}
+                blackCount={gameState.blackCount}
+                whiteCount={gameState.whiteCount}
+                actionsRemaining={gameState.actionsRemaining}
                 onNewGame={handleNewGame}
-                onEndGame={handleEndGame}
+                onEndTurn={handleEndTurn}
                 gameOver={gameState.gameOver}
                 winner={gameState.winner}
+                selectedPiece={gameState.selectedPiece}
               />
             </div>
           </TabsContent>
@@ -192,10 +222,10 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon name="BookOpen" size={28} />
-                  Правила игры КТОР
+                  Правила игры CTOR
                 </CardTitle>
                 <CardDescription>
-                  Простая и элегантная стратегическая игра
+                  Стратегия окружения и захвата территории
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -206,46 +236,70 @@ const Index = () => {
                       Цель игры
                     </h3>
                     <p className="text-muted-foreground">
-                      Захватить больше территории и камней противника, чем ваш оппонент.
-                      В конце игры подсчитываются очки за захваченную территорию и камни.
+                      Захватить больше клеток на доске, чем ваш противник. Игра заканчивается, когда все 100 клеток заполнены.
+                      Побеждает игрок с наибольшим количеством фишек своего цвета.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                      <Icon name="Grid3x3" size={20} className="text-accent" />
+                      Доска
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Игра ведётся на квадратной доске размером 10×10 клеток (всего 100 клеток).
+                      Игроки используют фишки двух цветов: чёрные и белые.
                     </p>
                   </div>
 
                   <div>
                     <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
                       <Icon name="Play" size={20} className="text-accent" />
-                      Как играть
+                      Ход игрока
                     </h3>
+                    <p className="text-muted-foreground mb-3">
+                      За один ход игрок может совершить <strong>до 2 действий</strong> на выбор:
+                    </p>
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex gap-2">
-                        <Icon name="Dot" size={20} />
-                        Игроки ходят по очереди, размещая камни на пересечениях линий
+                        <Icon name="Circle" size={20} className="text-accent" />
+                        <span><strong>Поставить фишку</strong> — разместить свою фишку на любую пустую клетку доски</span>
                       </li>
                       <li className="flex gap-2">
-                        <Icon name="Dot" size={20} />
-                        Первыми ходят чёрные камни
-                      </li>
-                      <li className="flex gap-2">
-                        <Icon name="Dot" size={20} />
-                        Один раз поставленный камень не перемещается
+                        <Icon name="Move" size={20} className="text-accent" />
+                        <span><strong>Переместить фишку</strong> — переместить свою одиночную фишку (без соседей своего цвета) на одну клетку по вертикали или горизонтали</span>
                       </li>
                     </ul>
+                    <div className="bg-muted/50 p-4 rounded-lg mt-3">
+                      <p className="text-sm font-semibold mb-1">Примеры:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Поставить 2 фишки</li>
+                        <li>• Поставить 1 фишку и переместить 1 фишку</li>
+                        <li>• Переместить 2 одиночные фишки</li>
+                        <li>• Совершить только 1 действие и завершить ход</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div>
                     <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
                       <Icon name="Zap" size={20} className="text-accent" />
-                      Захват камней
+                      Захват фишек противника
                     </h3>
                     <p className="text-muted-foreground mb-2">
-                      Группа камней захватывается, когда все соседние пункты по вертикали и горизонтали
-                      заняты камнями противника. Захваченные камни снимаются с доски и приносят очки.
+                      Когда вы ставите или перемещаете фишку, проверяется окружение всех фишек противника в области 3×3 вокруг вашей фишки.
                     </p>
-                    <div className="bg-muted/50 p-4 rounded-lg">
-                      <p className="text-sm font-semibold mb-1">Важно:</p>
+                    <p className="text-muted-foreground mb-3">
+                      <strong>Фишка противника переворачивается и становится вашей</strong>, если в области 3×3 вокруг неё находится <strong>от 5 до 8 ваших фишек</strong>.
+                    </p>
+                    <div className="bg-accent/10 p-4 rounded-lg border border-accent">
+                      <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+                        <Icon name="Lightbulb" size={16} />
+                        Важно:
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Свободные пункты рядом с группой камней называются «дыханиями».
-                        Группа без дыханий захватывается противником.
+                        Захват может произойти <strong>сразу у нескольких фишек</strong> противника в области 3×3 от вашей фишки.
+                        Это делает каждый ход стратегически важным!
                       </p>
                     </div>
                   </div>
@@ -256,26 +310,20 @@ const Index = () => {
                       Окончание игры
                     </h3>
                     <p className="text-muted-foreground">
-                      Игра заканчивается, когда оба игрока пасуют подряд или нажимают «Завершить игру».
-                      Затем подсчитывается территория — пустые пункты, окружённые камнями одного цвета.
+                      Игра автоматически заканчивается, когда <strong>все 100 клеток доски заполнены фишками</strong>.
+                      Подсчитываются фишки каждого цвета, и объявляется победитель.
                     </p>
                   </div>
 
                   <div>
                     <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
                       <Icon name="Trophy" size={20} className="text-accent" />
-                      Подсчёт очков
+                      Определение победителя
                     </h3>
-                    <ul className="space-y-2 text-muted-foreground">
-                      <li className="flex gap-2">
-                        <Icon name="Plus" size={20} className="text-accent" />
-                        1 очко за каждый захваченный камень противника
-                      </li>
-                      <li className="flex gap-2">
-                        <Icon name="Plus" size={20} className="text-accent" />
-                        1 очко за каждый пункт контролируемой территории
-                      </li>
-                    </ul>
+                    <p className="text-muted-foreground">
+                      Побеждает игрок, у которого больше фишек своего цвета на доске в конце игры.
+                      При равном количестве фишек объявляется ничья.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -291,7 +339,7 @@ const Index = () => {
                     Режим обучения
                   </CardTitle>
                   <CardDescription>
-                    Научитесь играть в КТОР шаг за шагом
+                    Научитесь играть в CTOR шаг за шагом
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -332,9 +380,9 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Контроль центра</p>
+                          <p className="font-semibold mb-1">Создавайте плотные группы</p>
                           <p className="text-sm text-muted-foreground">
-                            Камни в центре доски имеют больше возможностей для развития территории.
+                            Размещайте фишки рядом друг с другом, чтобы создать зоны влияния 3×3 для захвата фишек противника.
                           </p>
                         </div>
                       </div>
@@ -342,10 +390,10 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Связность групп</p>
+                          <p className="font-semibold mb-1">Защищайте свои фишки</p>
                           <p className="text-sm text-muted-foreground">
-                            Держите свои камни связанными, чтобы они поддерживали друг друга.
-                            Изолированные камни легче захватить.
+                            Следите, чтобы ваши фишки не оказывались в окружении 5-8 фишек противника.
+                            Используйте перемещения, чтобы вывести одиночные фишки из опасных зон.
                           </p>
                         </div>
                       </div>
@@ -353,10 +401,10 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Следите за дыханиями</p>
+                          <p className="font-semibold mb-1">Используйте перемещения</p>
                           <p className="text-sm text-muted-foreground">
-                            Группа камней без свободных соседних пунктов будет захвачена.
-                            Всегда оставляйте путь к отступлению.
+                            Одиночные фишки можно перемещать для создания ловушек или спасения от захвата.
+                            Это тактическое преимущество CTOR перед классическими играми.
                           </p>
                         </div>
                       </div>
@@ -364,10 +412,21 @@ const Index = () => {
                       <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                         <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
                         <div>
-                          <p className="font-semibold mb-1">Баланс атаки и защиты</p>
+                          <p className="font-semibold mb-1">Контролируйте центр</p>
                           <p className="text-sm text-muted-foreground">
-                            Не только атакуйте, но и защищайте свою территорию.
-                            Одна сильная группа лучше нескольких слабых.
+                            Фишки в центре доски имеют полную область 3×3 для захвата противника.
+                            Угловые и крайние фишки менее эффективны для захвата.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
+                        <Icon name="Lightbulb" className="text-accent mt-1" size={24} />
+                        <div>
+                          <p className="font-semibold mb-1">Планируйте на 2 хода вперёд</p>
+                          <p className="text-sm text-muted-foreground">
+                            У вас есть 2 действия за ход — используйте их комбинированно.
+                            Например: поставьте фишку для атаки, затем переместите одиночную для защиты.
                           </p>
                         </div>
                       </div>
