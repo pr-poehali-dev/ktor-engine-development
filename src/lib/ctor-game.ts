@@ -42,19 +42,32 @@ export const initGame = (): GameState => ({
 });
 
 export const isValidPosition = (pos: Position): boolean => {
-  return pos.row >= 0 && pos.row < BOARD_SIZE && pos.col >= 0 && pos.col < BOARD_SIZE;
+  return true;
+};
+
+export const normalizePosition = (pos: Position): Position => {
+  return {
+    row: ((pos.row % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE,
+    col: ((pos.col % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE,
+  };
 };
 
 export const canPlacePiece = (board: Player[][], pos: Position): boolean => {
-  return isValidPosition(pos) && board[pos.row][pos.col] === null;
+  const normalized = normalizePosition(pos);
+  return board[normalized.row][normalized.col] === null;
 };
 
 export const canMovePiece = (board: Player[][], from: Position, to: Position, player: Player): boolean => {
-  if (!isValidPosition(from) || !isValidPosition(to)) return false;
-  if (board[from.row][from.col] !== player) return false;
-  if (board[to.row][to.col] !== null) return false;
+  const normFrom = normalizePosition(from);
+  const normTo = normalizePosition(to);
   
-  const isIsolated = getNeighbors(from).every(n => board[n.row][n.col] !== player);
+  if (board[normFrom.row][normFrom.col] !== player) return false;
+  if (board[normTo.row][normTo.col] !== null) return false;
+  
+  const isIsolated = getNeighbors(from).every(n => {
+    const nn = normalizePosition(n);
+    return board[nn.row][nn.col] !== player;
+  });
   if (!isIsolated) return false;
   
   const rowDiff = Math.abs(from.row - to.row);
@@ -73,11 +86,7 @@ const getNeighbors = (pos: Position): Position[] => {
   ];
   
   for (const dir of directions) {
-    const newRow = pos.row + dir.row;
-    const newCol = pos.col + dir.col;
-    if (isValidPosition({ row: newRow, col: newCol })) {
-      neighbors.push({ row: newRow, col: newCol });
-    }
+    neighbors.push({ row: pos.row + dir.row, col: pos.col + dir.col });
   }
   
   return neighbors;
@@ -88,9 +97,7 @@ const get3x3Area = (pos: Position): Position[] => {
   
   for (let row = pos.row - 1; row <= pos.row + 1; row++) {
     for (let col = pos.col - 1; col <= pos.col + 1; col++) {
-      if (isValidPosition({ row, col })) {
-        area.push({ row, col });
-      }
+      area.push({ row, col });
     }
   }
   
@@ -102,14 +109,21 @@ const checkAndFlipPieces = (board: Player[][], pos: Position, player: Player): n
   let flipped = 0;
   
   const area = get3x3Area(pos);
-  const opponentPieces = area.filter(p => board[p.row][p.col] === opponent);
+  const opponentPieces = area.filter(p => {
+    const np = normalizePosition(p);
+    return board[np.row][np.col] === opponent;
+  });
   
   for (const opponentPos of opponentPieces) {
     const surroundingArea = get3x3Area(opponentPos);
-    const playerCount = surroundingArea.filter(p => board[p.row][p.col] === player).length;
+    const playerCount = surroundingArea.filter(p => {
+      const np = normalizePosition(p);
+      return board[np.row][np.col] === player;
+    }).length;
     
     if (playerCount >= 5 && playerCount <= 8) {
-      board[opponentPos.row][opponentPos.col] = player;
+      const normOpp = normalizePosition(opponentPos);
+      board[normOpp.row][normOpp.col] = player;
       flipped++;
     }
   }
@@ -136,8 +150,9 @@ export const placePiece = (state: GameState, pos: Position): GameState => {
     return state;
   }
   
+  const normalized = normalizePosition(pos);
   const newBoard = state.board.map(row => [...row]);
-  newBoard[pos.row][pos.col] = state.currentPlayer;
+  newBoard[normalized.row][normalized.col] = state.currentPlayer;
   
   checkAndFlipPieces(newBoard, pos, state.currentPlayer);
   
@@ -163,9 +178,11 @@ export const movePiece = (state: GameState, from: Position, to: Position): GameS
     return state;
   }
   
+  const normFrom = normalizePosition(from);
+  const normTo = normalizePosition(to);
   const newBoard = state.board.map(row => [...row]);
-  newBoard[from.row][from.col] = null;
-  newBoard[to.row][to.col] = state.currentPlayer;
+  newBoard[normFrom.row][normFrom.col] = null;
+  newBoard[normTo.row][normTo.col] = state.currentPlayer;
   
   checkAndFlipPieces(newBoard, to, state.currentPlayer);
   
@@ -187,11 +204,15 @@ export const movePiece = (state: GameState, from: Position, to: Position): GameS
 };
 
 export const selectPiece = (state: GameState, pos: Position): GameState => {
-  if (state.board[pos.row][pos.col] !== state.currentPlayer) {
+  const normalized = normalizePosition(pos);
+  if (state.board[normalized.row][normalized.col] !== state.currentPlayer) {
     return state;
   }
   
-  const isIsolated = getNeighbors(pos).every(n => state.board[n.row][n.col] !== state.currentPlayer);
+  const isIsolated = getNeighbors(pos).every(n => {
+    const nn = normalizePosition(n);
+    return state.board[nn.row][nn.col] !== state.currentPlayer;
+  });
   if (!isIsolated) {
     return state;
   }
@@ -258,18 +279,21 @@ export const getBestMove = (state: GameState): GameAction | null => {
   let bestScore = -Infinity;
   
   for (const pos of possiblePlacements) {
+    const normalized = normalizePosition(pos);
     const testBoard = state.board.map(row => [...row]);
-    testBoard[pos.row][pos.col] = player;
+    testBoard[normalized.row][normalized.col] = player;
     const flipped = checkAndFlipPieces(testBoard, pos, player);
     
     let score = flipped * 20;
     
     const area = get3x3Area(pos);
-    const opponentInArea = area.filter(p => testBoard[p.row][p.col] === opponent).length;
+    const opponentInArea = area.filter(p => {
+      const np = normalizePosition(p);
+      return testBoard[np.row][np.col] === opponent;
+    }).length;
     score += opponentInArea * 5;
     
-    const centerDistance = Math.abs(pos.row - 4.5) + Math.abs(pos.col - 4.5);
-    score += (9 - centerDistance) * 2;
+
     
     score += Math.random() * 5;
     
@@ -280,9 +304,11 @@ export const getBestMove = (state: GameState): GameAction | null => {
   }
   
   for (const move of possibleMoves) {
+    const normFrom = normalizePosition(move.from);
+    const normTo = normalizePosition(move.to);
     const testBoard = state.board.map(row => [...row]);
-    testBoard[move.from.row][move.from.col] = null;
-    testBoard[move.to.row][move.to.col] = player;
+    testBoard[normFrom.row][normFrom.col] = null;
+    testBoard[normTo.row][normTo.col] = player;
     const flipped = checkAndFlipPieces(testBoard, move.to, player);
     
     let score = flipped * 25 + 10;
