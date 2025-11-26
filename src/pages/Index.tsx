@@ -246,10 +246,21 @@ const Index = () => {
                       <Icon name="Grid3x3" size={20} className="text-accent" />
                       Доска
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mb-3">
                       Игра ведётся на квадратной доске размером 10×10 клеток (всего 100 клеток).
                       Игроки используют фишки двух цветов: чёрные и белые.
                     </p>
+                    <div className="bg-accent/10 p-4 rounded-lg border border-accent">
+                      <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+                        <Icon name="Orbit" size={16} />
+                        Тороидальная топология (ТОР):
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Доска устроена как поверхность тора (бублика) — верхний край соединён с нижним, 
+                        левый с правым. Фишки могут перемещаться и захватывать через границы поля.
+                        Цветные края показывают, какие стороны соединены между собой.
+                      </p>
+                    </div>
                   </div>
 
                   <div>
